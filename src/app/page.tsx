@@ -1,7 +1,49 @@
-import Image from "next/image";
+"use client";
 import styles from "./page.module.css";
+import { FormEvent, useEffect, useState } from "react";
+import { useReadContract, useWriteContract, useWatchContractEvent } from 'wagmi';
+import contract from "../../contract.json";
 
 export default function Home() {
+
+  const [message, setMessage] = useState<String>("");
+
+  const { writeContract } = useWriteContract()
+
+  const result = useReadContract({
+    abi: contract.abi,
+    address: contract.address as `0x${string}`,
+    functionName: 'getMessage',
+  })
+
+  useEffect(() => {
+    console.log({ result })
+    setMessage(result.data as string);
+  }, [result])
+
+  useWatchContractEvent({
+    abi: contract.abi,
+    address: contract.address as `0x${string}`,
+    eventName: 'messageChaged',
+    onLogs(logs) {
+      console.log('New logs!', logs);
+      result.refetch()
+    },
+  })
+
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const formData = new FormData(event.currentTarget);
+    const value = formData.get("message");
+    writeContract({
+      abi: contract.abi,
+      address: contract.address as `0x${string}`,
+      functionName: 'updateMessage',
+      args: [value],
+    })
+  }
+
   return (
     <main className={styles.main}>
       <div className={styles.description}>
@@ -10,85 +52,18 @@ export default function Home() {
           <code className={styles.code}>src/app/page.tsx</code>
         </p>
         <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
+          <w3m-button />
         </div>
       </div>
 
       <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
-
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
+        <label className={styles.message}>{message}</label>
+        <div>
+          <form className={styles.form} onSubmit={onSubmit}>
+            <input type="text" name="message" />
+            <button type="submit">Cambiar Mensaje</button>
+          </form>
+        </div>
       </div>
     </main>
   );
